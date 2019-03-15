@@ -5,6 +5,6 @@ class Message(val message: String) {
 
     val encoded: ByteArray
         get() {
-
+            return "".toByteArray()
         }
 }
