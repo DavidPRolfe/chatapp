@@ -1,5 +1,9 @@
 package client
 
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import shared.Closed
+import shared.Message
 import java.nio.ByteBuffer
 import java.net.Socket
 import java.lang.System.exit
@@ -8,13 +12,11 @@ import java.net.UnknownHostException
 import java.util.*
 
 import shared.PORT
-import java.io.InputStream
-import java.io.OutputStream
-import java.lang.System.out
+import shared.decodeMessage
 import java.net.SocketException
 
 fun main() {
-    var ip = "10.112.146.242"
+    var ip = "10.112.152.46"
 
     var client = Client(ip)
     if (!client.connect()) {
@@ -28,6 +30,8 @@ fun main() {
         }
     })
 
+    GlobalScope.launch { while(true){client.recieveMessages()} }
+
     val scanner = Scanner(System.`in`)
     println("what's your username friend?")
     print("> ")
@@ -36,21 +40,21 @@ fun main() {
     while (true) {
         print("> ")
         val message = scanner.nextLine()
-        if (message == "exit") {
+        if (message == "/exit") {
             client.close()
             exit(0)
         }
-        if (message == "change username") {
+        if (message == "/changeusername") {
             println("new username?")
             print("> ")
             client.username = scanner.nextLine()
             continue
         }
-        client.sendMessage(message)
+        if (!message.isEmpty()) {
+            client.sendMessage(message)
+        }
     }
 }
-
-
 
 class Client(val address: String){
 
@@ -107,11 +111,30 @@ class Client(val address: String){
                     println("cannot reconnect, try again soon \uD83E\uDD23")
                 }
             }
-            println("sent message")
         } else {
             println("failed to re-establish connection")
             exit(0)
         }
+    }
 
+    fun recieveMessages() {
+
+        val input = serverConnection.getInputStream().buffered()
+        try {
+            read@ while (serverConnection.isConnected && !serverConnection.isClosed) {
+                when (val message = decodeMessage(input)) {
+                    is Closed -> { break@read }
+                    is Error -> {
+                        println("\n ${message.message}")
+                        break@read
+                    }
+                    is Message -> {
+                        println("\n${message.headers.username}: ${message.body}")
+                    }
+                }
+            }
+        } catch (e: SocketException) {
+            println(e)
+        }
     }
 }
