@@ -11,13 +11,25 @@ sealed class Response
 
 sealed class FailedRead: Response()
 
-data class Message(val headers: Headers, val body: String): Response()
+data class Message(val headers: Headers, val body: String): Response() {
+    fun toByteArray(): ByteArray {
+        val headerArray = headers.toByteArray()
+        val headerSize = headerArray.size.toByteArray()
+
+        val message = body.toByteArray()
+        val messageSize = message.size.toByteArray()
+
+        return headerSize + messageSize + headerArray + message
+    }
+}
 
 data class Error(val message: String): FailedRead()
 
 object Closed: FailedRead()
 
-data class Headers(val username: String)
+data class Headers(val username: String) {
+    fun toByteArray(): ByteArray = username.toByteArray()
+}
 
 fun decodeMessage(input: InputStream): Response {
     // Reads header size
@@ -49,6 +61,7 @@ fun decodeMessage(input: InputStream): Response {
 
 fun readBytes(input: InputStream, byteArray: ByteArray): FailedRead? {
     val readSize = input.read(byteArray)
+    // Reading 0 terminates the connection
     if (readSize == 0) {
         return Closed
     } else if (readSize != byteArray.size) {
@@ -59,3 +72,5 @@ fun readBytes(input: InputStream, byteArray: ByteArray): FailedRead? {
 
 
 fun ByteArray.toInt(): Int = ByteBuffer.wrap(this).order(ByteOrder.BIG_ENDIAN).int
+
+fun Int.toByteArray(): ByteArray = ByteBuffer.allocate(4).putInt(this).array()

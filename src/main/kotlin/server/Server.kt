@@ -22,16 +22,20 @@ fun server(port: Int, handleConnection: (Socket) -> Unit) {
 
 fun handleConnection(sock: Socket, dataStore: DataStore, decode: (InputStream) -> Response) {
     println("connected to ${sock.inetAddress.hostName}")
-    val out = PrintWriter(sock.getOutputStream(), true)
+    val out = sock.getOutputStream()
     val input = sock.getInputStream().buffered()
     val newMessage = { message: Message ->
-        out.println(message)
+        out.write(message.toByteArray())
+        out.flush()
     }
     dataStore.addListener(newMessage)
 
     try {
         if (sock.isConnected && !sock.isClosed) {
-            dataStore.messages.forEach{ out.println(it) }
+            dataStore.messages.forEach{
+                out.write(it.toByteArray())
+                out.flush()
+            }
         }
     } catch (e: SocketException) {
         println(e)
@@ -47,6 +51,8 @@ fun handleConnection(sock: Socket, dataStore: DataStore, decode: (InputStream) -
                     break@read
                 }
                 is Message -> {
+                    println(message.headers)
+                    println(message.body)
                     dataStore.add(message)
                 }
             }
@@ -55,6 +61,7 @@ fun handleConnection(sock: Socket, dataStore: DataStore, decode: (InputStream) -
         println(e)
     }
     dataStore.removeListener(newMessage)
+    println(newMessage)
     sock.close()
 }
 
