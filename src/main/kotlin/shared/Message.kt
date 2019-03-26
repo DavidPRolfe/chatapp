@@ -70,7 +70,6 @@ fun readBytes(input: InputStream, byteArray: ByteArray): FailedRead? {
     return null
 }
 
-
 fun ByteArray.toInt(): Int = ByteBuffer.wrap(this).order(ByteOrder.BIG_ENDIAN).int
 
 fun Int.toByteArray(): ByteArray = ByteBuffer.allocate(4).putInt(this).array()
