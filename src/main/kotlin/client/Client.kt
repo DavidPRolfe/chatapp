@@ -49,8 +49,8 @@ class Client(private val address: String){
             read@ while (serverConnection.isConnected && !serverConnection.isClosed) {
                 when (val message = decodeMessage(input)) {
                     is Closed -> { break@read }
-                    is Error -> {
-                        println("${message.message}")
+                    is Err -> {
+                        println(message.message)
                         break@read
                     }
                     is Message -> {
