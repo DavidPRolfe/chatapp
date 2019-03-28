@@ -23,6 +23,10 @@ class MemoryStore(private val max: Int = 100): DataStore {
         }
         messageStore.add(message)
 
+        notifyListeners(message)
+    }
+
+    private fun notifyListeners(message: Message) {
         listeners.forEach { it(message) }
     }
 
