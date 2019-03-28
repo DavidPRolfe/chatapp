@@ -45,18 +45,24 @@ fun decodeMessage(input: InputStream): Response {
     }
 
     // Read header
-    val header = ByteArray(headerSize.toInt())
-    when (val status = readBytes(input, header)) {
-        is Error, Closed -> return status
-    }
+    val header = if (headerSize.toInt() != 0) {
+        val headerArray = ByteArray(headerSize.toInt())
+        when (val status = readBytes(input, headerArray)) {
+            is Error, Closed -> return status
+        }
+        String(headerArray)
+    } else { "" }
 
     // Read message
-    val message = ByteArray(messageSize.toInt())
-    when (val status = readBytes(input, message)) {
-        is Error, Closed -> return status
-    }
+    val message = if (messageSize.toInt() != 0) {
+        val messageArray = ByteArray(messageSize.toInt())
+        when (val status = readBytes(input, messageArray)) {
+            is Error, Closed -> return status
+        }
+        String(messageArray)
+    } else { "" }
 
-    return Message(Headers(String(header)), String(message))
+    return Message(Headers(header), message)
 }
 
 fun readBytes(input: InputStream, byteArray: ByteArray): FailedRead? {
